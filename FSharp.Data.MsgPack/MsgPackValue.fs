@@ -2,7 +2,11 @@
 
 type TypeCode = byte
 
-type MsgPackValue =
+type ExtendedValue<'T when 'T : comparison> =
+  | Raw of TypeCode * byte []
+  | Parsed of 'T
+
+type MsgPackValue<'T when 'T : comparison> =
   | UInt8 of uint8
   | UInt16 of uint16
   | UInt32 of uint32
@@ -17,12 +21,34 @@ type MsgPackValue =
   | Float64 of float
   | String of string
   | Binary of byte []
-  | Array of MsgPackValue []
-  | Map of Map<MsgPackValue, MsgPackValue>
-  | Extended of TypeCode * byte []
+  | Array of MsgPackValue<'T> []
+  | Map of Map<MsgPackValue<'T>, MsgPackValue<'T>>
+  | Extended of ExtendedValue<'T>
+
+type MsgPackValue = MsgPackValue<Unit>
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module MsgPackValue =
+
+  module Limited =
+    
+    let Nil: MsgPackValue = Nil
+    let True: MsgPackValue = Boolean true
+    let False: MsgPackValue = Boolean false
+    let UInt8 value : MsgPackValue = UInt8 value
+    let UInt16 value : MsgPackValue = UInt16 value
+    let UInt32 value : MsgPackValue = UInt32 value
+    let UInt64 value : MsgPackValue = UInt64 value
+    let Int8 value : MsgPackValue = Int8 value
+    let Int16 value : MsgPackValue = Int16 value
+    let Int32 value : MsgPackValue = Int32 value
+    let Int64 value : MsgPackValue = Int64 value
+    let Float32 value : MsgPackValue = Float32 value
+    let Float64 value : MsgPackValue = Float64 value
+    let String value : MsgPackValue = String value
+    let Binary value : MsgPackValue = Binary value
+    let Array values : MsgPackValue = Array values
+    let Map map : MsgPackValue = Map map
 
   module HeadByte =
 

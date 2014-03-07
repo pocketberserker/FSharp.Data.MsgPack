@@ -2,12 +2,15 @@
 
 open System.IO
 open ParsecClone.BinaryCombinator
-open ParsecClone.CombinatorBase
 
 module MsgPack =
 
-  let unpack (bin: byte seq) =
-    use stream = new MemoryStream(Array.ofSeq bin)
-    let input = makeBinStream stream
-    match MsgPackParser.parser input with
-    | (result, _) -> result
+  let private unpackF parse (binary : byte []) =
+    use stream = new MemoryStream(binary)
+    stream |> makeBinStream |> parse |> fst
+
+  let unpack binary : MsgPackValue option =
+    unpackF MsgPackParser.parse binary
+
+  let unpackExt<'T when 'T : comparison> binary convert : MsgPackValue<'T> option =
+    unpackF (MsgPackParser.parseExt<'T> convert) binary
