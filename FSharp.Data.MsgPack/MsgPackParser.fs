@@ -75,8 +75,9 @@ module internal MsgPackParser =
   let fixString<'T when 'T : comparison> =
     let matchHead =
       satisfy (function | [| One; Zero; One |] -> true | _ -> false) (binParser.bitsN 3)
+      |>> binParser.bitsToInt
+      |>> (fun x -> System.BitConverter.GetBytes(x))
       |> binParser.makeBitP (binParser.byteN 1)
-      |>> (konst [| 0b101uy |])
     let length = binParser.bitsN 5 |>> binParser.bitsToInt |> binParser.makeBitP (binParser.byteN 1)
     stringN<'T> matchHead length
 
@@ -199,3 +200,36 @@ module internal MsgPackParser =
   let parseExt<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) input = parser f input
 
   let parse input = parseExt (fun t xs -> Raw (t, xs)) input
+
+  module OldSpec =
+
+    let fixRaw<'T when 'T : comparison> =
+      let matchHead =
+        satisfy (function | [| One; Zero; One |] -> true | _ -> false) (binParser.bitsN 3)
+        |>> binParser.bitsToInt
+        |>> (fun x -> System.BitConverter.GetBytes(x))
+        |> binParser.makeBitP (binParser.byteN 1)
+      let length =
+        binParser.bitsN 5
+        |>> binParser.bitsToInt
+        |> binParser.makeBitP (binParser.byteN 1)
+      binN<'T> matchHead length
+    let raw16<'T when 'T : comparison> =
+      binN<'T> (matchHead HeadByte.String16) (binParser.byte2 |>> (binParser.toUInt16 >> int))
+    let raw32<'T when 'T : comparison> =
+      binN<'T> (matchHead HeadByte.String32) (binParser.byte4 |>> (binParser.toUInt32 >> int))
+    let raw<'T when 'T : comparison> = choice [ fixRaw<'T>; raw16<'T>; raw32<'T> ]
+    
+    let parser<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
+      choice [
+        nil
+        bool'
+        uint'
+        int'
+        float'
+        raw
+        array' f
+        map' f
+      ]
+
+    let parse input = parser (fun t xs -> Raw (t, xs)) input
