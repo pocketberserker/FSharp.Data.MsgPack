@@ -23,14 +23,12 @@ module internal MsgPackParser =
     >>. binParser.bitsN 7
     |>> binParser.bitsToInt
     |>> (byte >> (UInt8: byte -> MsgPackValue<'T>))
-    |> binParser.makeBitP (binParser.byteN 1)
 
   let negativeFixInt<'T when 'T : comparison> =
     satisfy (function | [| One; One; One |] -> true | _ -> false) (binParser.bitsN 3)
     >>. binParser.bitsN 5
     |>> binParser.bitsToInt
     |>> (int8 >> (Int8: int8 -> MsgPackValue<'T>))
-    |> binParser.makeBitP (binParser.byteN 1)
 
   let uint8'<'T when 'T : comparison> = matchHead HeadByte.UInt8 >>. binParser.byte1 |>> (UInt8: byte -> MsgPackValue<'T>)
   let uint16'<'T when 'T : comparison> = matchHead HeadByte.UInt16 >>. binParser.uint16 |>> (UInt16: uint16 -> MsgPackValue<'T>)
@@ -38,7 +36,6 @@ module internal MsgPackParser =
   let uint64'<'T when 'T : comparison> = matchHead HeadByte.UInt64 >>. binParser.uint64 |>> (UInt64: uint64 -> MsgPackValue<'T>)
   let uint'<'T when 'T : comparison> =
     choice [
-      positiveFixInt<'T>
       uint8'<'T>
       uint16'<'T>
       uint32'<'T>
@@ -51,7 +48,6 @@ module internal MsgPackParser =
   let int64'<'T when 'T : comparison> = matchHead HeadByte.Int64 >>. binParser.int64 |>> (Int64: int64 -> MsgPackValue<'T>)
   let int'<'T when 'T : comparison> =
     choice [
-      negativeFixInt<'T>
       int8'<'T>
       int16'<'T>
       int32'<'T>
@@ -73,13 +69,14 @@ module internal MsgPackParser =
     |>> (String: string -> MsgPackValue<'T>)
   
   let fixString<'T when 'T : comparison> =
-    let matchHead =
-      satisfy (function | [| One; Zero; One |] -> true | _ -> false) (binParser.bitsN 3)
-      |>> binParser.bitsToInt
-      |>> (fun x -> System.BitConverter.GetBytes(x))
-      |> binParser.makeBitP (binParser.byteN 1)
-    let length = binParser.bitsN 5 |>> binParser.bitsToInt |> binParser.makeBitP (binParser.byteN 1)
-    stringN<'T> matchHead length
+    binParser.byte1
+    |> satisfy (byteToBitArray >> function
+    | [ One; Zero; One; _; _; _; _; _ ] -> true
+    | _ -> false)
+    |>> (byteToBitArray >> Seq.skip 3 >> Seq.toArray >> binParser.bitsToInt)
+    >>= fun length -> binParser.byteN length
+    |>> fun xs -> Encoding.UTF8.GetString(xs)
+    |>> (String: string -> MsgPackValue<'T>)
 
   let string8<'T when 'T : comparison> =
     stringN<'T> (matchHead HeadByte.String8) (binParser.byte1 |>> binParser.byteToInt)
@@ -141,10 +138,16 @@ module internal MsgPackParser =
       ext32 f
     ]
 
-  let rec fixArray f =
-    satisfy (function | [| One; Zero; Zero; One |] -> true | _ -> false) (binParser.bitsN 4)
-    >>. binParser.bitsN 4 |>> binParser.bitsToInt
+  let simpleFixType<'T when 'T : comparison> =
+    positiveFixInt<'T> <|> negativeFixInt<'T>
     |> binParser.makeBitP (binParser.byteN 1)
+
+  let rec fixArray f =
+    binParser.byte1
+    |> satisfy (byteToBitArray >> (function
+    | [ One; Zero; Zero; One; _; _; _; _ ] -> true
+    | _ -> false))
+    |>> (byteToBitArray >> Seq.skip 4 >> Seq.toArray >> binParser.bitsToInt)
     >>= fun size -> manyN size (parser f) |>> (Array.ofList >> Array)
 
   and array16 f =
@@ -159,14 +162,21 @@ module internal MsgPackParser =
     |>> (binParser.toUInt32 >> int)
     >>= fun size -> manyN size (parser f) |>> (Array.ofList >> Array)
 
-  and array' f = fixArray f <|> array16 f <|> array32 f
+  and array' f =
+    choice [
+      fixArray f
+      array16 f
+      array32 f
+    ]
 
   and keyValuePair f = parser f >>= fun key -> parser f |>> fun value -> (key, value)
 
   and fixMap f =
-    satisfy (function | [| One; Zero; Zero; Zero |] -> true | _ -> false) (binParser.bitsN 4)
-    >>. binParser.bitsN 4 |>> binParser.bitsToInt
-    |> binParser.makeBitP (binParser.byteN 1)
+    binParser.byte1
+    |> satisfy (byteToBitArray >> (function
+    | [ One; Zero; Zero; Zero; _; _; _; _ ] -> true
+    | _ -> false))
+    |>> (byteToBitArray >> Seq.skip 4 >> Seq.toArray >> binParser.bitsToInt)
     >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> Map)
 
   and map16 f =
@@ -181,7 +191,12 @@ module internal MsgPackParser =
     |>> (binParser.toUInt32 >> int)
     >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> Map)
 
-  and map' f = fixMap f <|> map16 f <|> map32 f
+  and map' f =
+    choice [
+      fixMap f
+      map16 f
+      map32 f
+    ]
 
   and parser<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
     choice [
@@ -195,6 +210,7 @@ module internal MsgPackParser =
       array' f
       map' f
       ext f
+      simpleFixType
     ]
 
   let parseExt<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) input = parser f input
@@ -204,22 +220,25 @@ module internal MsgPackParser =
   module OldSpec =
 
     let fixRaw<'T when 'T : comparison> =
-      let matchHead =
-        satisfy (function | [| One; Zero; One |] -> true | _ -> false) (binParser.bitsN 3)
-        |>> binParser.bitsToInt
-        |>> (fun x -> System.BitConverter.GetBytes(x))
-        |> binParser.makeBitP (binParser.byteN 1)
-      let length =
-        binParser.bitsN 5
-        |>> binParser.bitsToInt
-        |> binParser.makeBitP (binParser.byteN 1)
-      binN<'T> matchHead length
+      binParser.byte1
+      |> satisfy (byteToBitArray >> function
+      | [ One; Zero; One; _; _; _; _; _ ] -> true
+      | _ -> false)
+      |>> (byteToBitArray >> Seq.skip 3 >> Seq.toArray >> binParser.bitsToInt)
+      >>= fun length -> binParser.byteN length
+      |>> (Binary: byte [] -> MsgPackValue<'T>)
+
     let raw16<'T when 'T : comparison> =
       binN<'T> (matchHead HeadByte.String16) (binParser.byte2 |>> (binParser.toUInt16 >> int))
     let raw32<'T when 'T : comparison> =
       binN<'T> (matchHead HeadByte.String32) (binParser.byte4 |>> (binParser.toUInt32 >> int))
-    let raw<'T when 'T : comparison> = choice [ fixRaw<'T>; raw16<'T>; raw32<'T> ]
-    
+    let raw<'T when 'T : comparison> =
+      choice [
+        fixRaw<'T>
+        raw16<'T>
+        raw32<'T>
+      ]
+
     let parser<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
       choice [
         nil
@@ -230,6 +249,7 @@ module internal MsgPackParser =
         raw
         array' f
         map' f
+        simpleFixType
       ]
 
     let parse input = parser (fun t xs -> Raw (t, xs)) input
