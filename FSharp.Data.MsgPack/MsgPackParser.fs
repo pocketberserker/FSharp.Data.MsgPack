@@ -68,15 +68,18 @@ module internal MsgPackParser =
     |>> fun raw -> Encoding.UTF8.GetString(raw)
     |>> (String: string -> MsgPackValue<'T>)
   
-  let fixString<'T when 'T : comparison> =
+  let fixRaw<'T,'U when 'T : comparison> convert (value: 'U -> MsgPackValue<'T>) =
     binParser.byte1
     |> satisfy (byteToBitArray >> function
     | [ One; Zero; One; _; _; _; _; _ ] -> true
     | _ -> false)
     |>> (byteToBitArray >> Seq.skip 3 >> Seq.toArray >> binParser.bitsToInt)
     >>= fun length -> binParser.byteN length
-    |>> fun xs -> Encoding.UTF8.GetString(xs)
-    |>> (String: string -> MsgPackValue<'T>)
+    |>> convert
+    |>> value
+
+  let fixString<'T when 'T : comparison> =
+    fixRaw<'T, string> (fun xs -> Encoding.UTF8.GetString(xs)) String
 
   let string8<'T when 'T : comparison> =
     stringN<'T> (matchHead HeadByte.String8) (binParser.byte1 |>> binParser.byteToInt)
@@ -219,14 +222,7 @@ module internal MsgPackParser =
 
   module OldSpec =
 
-    let fixRaw<'T when 'T : comparison> =
-      binParser.byte1
-      |> satisfy (byteToBitArray >> function
-      | [ One; Zero; One; _; _; _; _; _ ] -> true
-      | _ -> false)
-      |>> (byteToBitArray >> Seq.skip 3 >> Seq.toArray >> binParser.bitsToInt)
-      >>= fun length -> binParser.byteN length
-      |>> (Binary: byte [] -> MsgPackValue<'T>)
+    let fixRaw<'T when 'T : comparison> = fixRaw<'T, byte []> id Binary
 
     let raw16<'T when 'T : comparison> =
       binN<'T> (matchHead HeadByte.String16) (binParser.byte2 |>> (binParser.toUInt16 >> int))
