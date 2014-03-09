@@ -12,10 +12,16 @@ module internal MsgPackParser =
 
   let private matchHead b = satisfy ((=) [| b |]) (binParser.byteN 1)
 
-  let nil<'T when 'T : comparison> = matchHead HeadByte.Nil |>> konst (Nil: MsgPackValue<'T>)
+  let nil<'T when 'T : comparison> =
+    matchHead HeadByte.Nil
+    |>> konst (Nil: MsgPackValue<'T>)
 
-  let false'<'T when 'T : comparison> = matchHead HeadByte.False |>> konst (Boolean false: MsgPackValue<'T>)
-  let true'<'T when 'T : comparison> = matchHead HeadByte.True |>> konst (Boolean true: MsgPackValue<'T>)
+  let false'<'T when 'T : comparison> =
+    matchHead HeadByte.False
+    |>> konst (Boolean false: MsgPackValue<'T>)
+  let true'<'T when 'T : comparison> =
+    matchHead HeadByte.True
+    |>> konst (Boolean true: MsgPackValue<'T>)
   let bool'<'T when 'T : comparison> = false'<'T> <|> true'<'T>
 
   let positiveFixInt<'T when 'T : comparison> =
@@ -30,10 +36,22 @@ module internal MsgPackParser =
     |>> binParser.bitsToInt
     |>> (int8 >> (Int8: int8 -> MsgPackValue<'T>))
 
-  let uint8'<'T when 'T : comparison> = matchHead HeadByte.UInt8 >>. binParser.byte1 |>> (UInt8: byte -> MsgPackValue<'T>)
-  let uint16'<'T when 'T : comparison> = matchHead HeadByte.UInt16 >>. binParser.uint16 |>> (UInt16: uint16 -> MsgPackValue<'T>)
-  let uint32'<'T when 'T : comparison> = matchHead HeadByte.UInt32 >>. binParser.uint32 |>> (UInt32: uint32 -> MsgPackValue<'T>)
-  let uint64'<'T when 'T : comparison> = matchHead HeadByte.UInt64 >>. binParser.uint64 |>> (UInt64: uint64 -> MsgPackValue<'T>)
+  let uint8'<'T when 'T : comparison> =
+    matchHead HeadByte.UInt8
+    >>. binParser.byte1
+    |>> (UInt8: byte -> MsgPackValue<'T>)
+  let uint16'<'T when 'T : comparison> =
+    matchHead HeadByte.UInt16
+    >>. binParser.uint16
+    |>> (UInt16: uint16 -> MsgPackValue<'T>)
+  let uint32'<'T when 'T : comparison> =
+    matchHead HeadByte.UInt32
+    >>. binParser.uint32
+    |>> (UInt32: uint32 -> MsgPackValue<'T>)
+  let uint64'<'T when 'T : comparison> =
+    matchHead HeadByte.UInt64
+    >>. binParser.uint64
+    |>> (UInt64: uint64 -> MsgPackValue<'T>)
   let uint'<'T when 'T : comparison> =
     choice [
       uint8'<'T>
@@ -42,10 +60,22 @@ module internal MsgPackParser =
       uint64'<'T>
     ]
 
-  let int8'<'T when 'T : comparison> = matchHead HeadByte.Int8 >>. binParser.byte1 |>> (int8 >> (Int8: int8 -> MsgPackValue<'T>))
-  let int16'<'T when 'T : comparison> = matchHead HeadByte.Int16 >>. binParser.int16 |>> (Int16: int16 -> MsgPackValue<'T>)
-  let int32'<'T when 'T : comparison> = matchHead HeadByte.Int32 >>. binParser.int32 |>> (Int32: int -> MsgPackValue<'T>)
-  let int64'<'T when 'T : comparison> = matchHead HeadByte.Int64 >>. binParser.int64 |>> (Int64: int64 -> MsgPackValue<'T>)
+  let int8'<'T when 'T : comparison> =
+    matchHead HeadByte.Int8
+    >>. binParser.byte1
+    |>> (int8 >> (Int8: int8 -> MsgPackValue<'T>))
+  let int16'<'T when 'T : comparison> =
+    matchHead HeadByte.Int16
+    >>. binParser.int16
+    |>> (Int16: int16 -> MsgPackValue<'T>)
+  let int32'<'T when 'T : comparison> =
+    matchHead HeadByte.Int32
+    >>. binParser.int32
+    |>> (Int32: int -> MsgPackValue<'T>)
+  let int64'<'T when 'T : comparison> =
+    matchHead HeadByte.Int64
+    >>. binParser.int64
+    |>> (Int64: int64 -> MsgPackValue<'T>)
   let int'<'T when 'T : comparison> =
     choice [
       int8'<'T>
@@ -55,9 +85,12 @@ module internal MsgPackParser =
     ]
 
   let float32'<'T when 'T : comparison> =
-    matchHead HeadByte.Float32 >>. binParser.floatP |>> (Float32: float32 -> MsgPackValue<'T>)
+    matchHead HeadByte.Float32
+    >>. binParser.floatP
+    |>> (Float32: float32 -> MsgPackValue<'T>)
   let float64'<'T when 'T : comparison> =
-    matchHead HeadByte.Float64 >>. binParser.byteN 8
+    matchHead HeadByte.Float64
+    >>. binParser.byteN 8
     |>> (fun xs -> Float64 (System.BitConverter.ToDouble(xs, 0)): MsgPackValue<'T>)
   let float'<'T when 'T : comparison> = float32'<'T> <|> float64'<'T>
 
@@ -87,7 +120,13 @@ module internal MsgPackParser =
     stringN<'T> (matchHead HeadByte.String16) (binParser.byte2 |>> (binParser.toUInt16 >> int))
   let string32<'T when 'T : comparison> =
     stringN<'T> (matchHead HeadByte.String32) (binParser.byte4 |>> (binParser.toUInt32 >> int))
-  let string'<'T when 'T : comparison> = choice [ fixString<'T>; string8<'T>; string16<'T>; string32<'T> ]
+  let string'<'T when 'T : comparison> =
+    choice [
+      fixString<'T>
+      string8<'T>
+      string16<'T>
+      string32<'T>
+    ]
 
   let private binN<'T when 'T : comparison> matchHead length =
     matchHead
@@ -102,7 +141,12 @@ module internal MsgPackParser =
   let bin32<'T when 'T : comparison> =
     binN<'T> (matchHead HeadByte.Binary32) (binParser.byte4 |>> (binParser.toUInt32 >> int))
 
-  let binary<'T when 'T : comparison> = choice [ bin8<'T>; bin16<'T>; bin32<'T> ]
+  let binary<'T when 'T : comparison> =
+    choice [
+      bin8<'T>
+      bin16<'T>
+      bin32<'T>
+    ]
 
   let private fixExtN<'T when 'T : comparison> head data (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
     matchHead head
