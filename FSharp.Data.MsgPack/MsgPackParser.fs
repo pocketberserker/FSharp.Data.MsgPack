@@ -14,14 +14,14 @@ module internal MsgPackParser =
 
   let nil<'T when 'T : comparison> =
     matchHead HeadByte.Nil
-    |>> konst (Nil: MsgPackValue<'T>)
+    |>>% (Nil: MsgPackValue<'T>)
 
   let false'<'T when 'T : comparison> =
     matchHead HeadByte.False
-    |>> konst (Boolean false: MsgPackValue<'T>)
+    |>>% (Boolean false: MsgPackValue<'T>)
   let true'<'T when 'T : comparison> =
     matchHead HeadByte.True
-    |>> konst (Boolean true: MsgPackValue<'T>)
+    |>>% (Boolean true: MsgPackValue<'T>)
   let bool'<'T when 'T : comparison> = false'<'T> <|> true'<'T>
 
   let positiveFixInt<'T when 'T : comparison> =
@@ -216,7 +216,7 @@ module internal MsgPackParser =
       array32 f
     ]
 
-  and keyValuePair f = parser f >>= fun key -> parser f |>> fun value -> (key, value)
+  and keyValuePair f = parser f .>>. parser f
 
   and fixMap f =
     binParser.byte1
