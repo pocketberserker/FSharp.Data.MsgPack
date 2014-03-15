@@ -54,8 +54,8 @@
   <ItemGroup>
     <None Include="packages.config" />
     <Compile Include="Prelude.fs" />
-    <Compile Include="MsgPackValue.fs" />
-    <Compile Include="MsgPackParser.fs" />
+    <Compile Include="Value.fs" />
+    <Compile Include="Parser.fs" />
     <Compile Include="MsgPack.fs" />
   </ItemGroup>
   <ItemGroup>
