@@ -3,8 +3,6 @@
 [<AutoOpen>]
 module internal Prelude =
 
-  let inline konst a = fun _ -> a
-
   let uint16ToBytes (x: uint16) = System.BitConverter.GetBytes(x)
   let uint32ToBytes (x: uint32) = System.BitConverter.GetBytes(x)
   let uint64ToBytes (x: uint64) = System.BitConverter.GetBytes(x)
