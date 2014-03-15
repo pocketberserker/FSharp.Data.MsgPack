@@ -25,7 +25,17 @@ type MsgPackValue<'T when 'T : comparison> =
   | Map of Map<MsgPackValue<'T>, MsgPackValue<'T>>
   | Extended of ExtendedValue<'T>
 
-type MsgPackValue = MsgPackValue<Unit>
+type IPackable =
+  abstract member Code: TypeCode
+  abstract member Pack: unit -> byte []
+
+type NoneUseExtended = NoneUseExtended
+  with
+    interface IPackable with
+      member x.Code = failwith "You should not use this member if you don't use Extended."
+      member x.Pack() = failwith "You should not use this member if you don't use Extended."
+
+type MsgPackValue = MsgPackValue<NoneUseExtended>
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module MsgPackValue =
