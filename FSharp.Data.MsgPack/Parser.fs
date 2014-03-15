@@ -34,7 +34,7 @@ module internal MsgPackParser =
     satisfy (function | [| One; One; One |] -> true | _ -> false) (binParser.bitsN 3)
     >>. binParser.bitsN 5
     |>> binParser.bitsToInt
-    |>> (int8 >> (Int8: int8 -> MsgPackValue<'T>))
+    |>> (fun x -> Int8 (int8 x - 0b100000y) : MsgPackValue<'T>)
 
   let uint8'<'T when 'T : comparison> =
     matchHead HeadByte.UInt8
