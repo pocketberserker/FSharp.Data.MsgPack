@@ -4,16 +4,6 @@ module internal MsgPackFormatter =
 
   open MsgPackValue
 
-  let private uint16ToBytes (x: uint16) = System.BitConverter.GetBytes(x)
-  let private uint32ToBytes (x: uint32) = System.BitConverter.GetBytes(x)
-  let private uint64ToBytes (x: uint64) = System.BitConverter.GetBytes(x)
-  let private int16ToBytes (x: int16) = System.BitConverter.GetBytes(x)
-  let private intToBytes (x: int) = System.BitConverter.GetBytes(x)
-  let private int64ToBytes (x: int64) = System.BitConverter.GetBytes(x)
-  let private float32ToBytes (x: float32) = System.BitConverter.GetBytes(x)
-  let private floatToBytes (x: float) = System.BitConverter.GetBytes(x)
-  let private stringToBytes (s: string) = System.Text.Encoding.UTF8.GetBytes(s)
-
   let (|FixExt1|FixExt2|FixExt4|FixExt8|FixExt16|Other|) value =
     let length = Array.length value
     if length = 1 then FixExt1 HeadByte.FixExtended1
@@ -92,3 +82,17 @@ module internal MsgPackFormatter =
         [| yield HeadByte.Map16; yield! length |> uint16 |> uint16ToBytes; yield! values |]
       else [| yield HeadByte.Map32; yield! length |> uint32 |> uint32ToBytes; yield! values |]
     | Extended ext -> formatExtended ext
+
+  module OldSpec =
+
+    let formatRaw length value =
+      if length <= 31 then [| yield 0xa0uy + byte length; yield! value |]
+      elif length <= int System.UInt16.MaxValue then
+        [| yield HeadByte.String16; yield! length |> uint16 |> uint16ToBytes; yield! value |]
+      else [| yield HeadByte.String32; yield! length |> uint32 |> uint32ToBytes; yield! value |]
+
+    let format (value: MsgPackValue) =
+      match value with
+      | String value -> formatRaw (String.length value) (stringToBytes value)
+      | Binary value -> formatRaw (Array.length value) value
+      | _ -> format value

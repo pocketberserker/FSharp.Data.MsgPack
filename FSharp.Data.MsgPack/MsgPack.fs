@@ -24,3 +24,7 @@ module MsgPack =
   module OldSpec =
   
     let unpack binary : MsgPackValue option = unpackF MsgPackParser.OldSpec.parse binary
+
+    open MsgPackValue
+
+    let pack value = MsgPackFormatter.OldSpec.format value
