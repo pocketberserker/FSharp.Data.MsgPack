@@ -11,7 +11,7 @@ module MsgPack =
 
   let unpack binary : MsgPackValue option = unpackF MsgPackParser.parse binary
 
-  let unpackExt<'T when 'T : comparison> binary convert : MsgPackValue<'T> option =
+  let unpackExt<'T when 'T : comparison> convert binary : MsgPackValue<'T> option =
     unpackF (MsgPackParser.parseExt<'T> convert) binary
 
   let pack (value: MsgPackValue) = MsgPackFormatter.format value
