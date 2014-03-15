@@ -195,7 +195,10 @@ module internal MsgPackParser =
     | [ One; Zero; Zero; One; _; _; _; _ ] -> true
     | _ -> false))
     |>> (byteToBitArray >> Seq.skip 4 >> Seq.toArray >> binParser.bitsToInt)
-    >>= fun size -> manyN size (parser f) |>> (Array.ofList >> Array)
+    >>= fun size ->
+      if size > 0 then manyN size (parser f)
+      else preturn []
+    |>> (Array.ofList >> Array)
 
   and array16 f =
     matchHead HeadByte.Array16
@@ -224,7 +227,10 @@ module internal MsgPackParser =
     | [ One; Zero; Zero; Zero; _; _; _; _ ] -> true
     | _ -> false))
     |>> (byteToBitArray >> Seq.skip 4 >> Seq.toArray >> binParser.bitsToInt)
-    >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> Map)
+    >>= fun size ->
+      if size > 0 then manyN size (keyValuePair f)
+      else preturn []
+    |>> (Map.ofList >> Map)
 
   and map16 f =
     matchHead HeadByte.Map16
