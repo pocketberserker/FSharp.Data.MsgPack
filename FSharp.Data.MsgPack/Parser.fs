@@ -107,7 +107,7 @@ module internal MsgPackParser =
     | [ One; Zero; One; _; _; _; _; _ ] -> true
     | _ -> false)
     |>> (byteToBitArray >> Seq.skip 3 >> Seq.toArray >> binParser.bitsToInt)
-    >>= fun length -> binParser.byteN length
+    >>= binParser.byteN
     |>> convert
     |>> value
 
@@ -131,7 +131,7 @@ module internal MsgPackParser =
   let private binN<'T when 'T : comparison> matchHead length =
     matchHead
     >>. length
-    >>= fun length -> binParser.byteN length
+    >>= binParser.byteN
     |>> (Binary: byte [] -> MsgPackValue<'T>)
 
   let bin8<'T when 'T : comparison> =
@@ -151,7 +151,7 @@ module internal MsgPackParser =
   let private fixExtN<'T when 'T : comparison> head data (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
     matchHead head
     >>. binParser.byte1
-    >>= fun t -> data |>> fun xs -> f t xs
+    >>= fun t -> data |>> f t
     |>> Extended
 
   let fixExt1<'T when 'T : comparison> f = fixExtN<'T> HeadByte.FixExtended1 (binParser.byteN 1) f
@@ -163,7 +163,7 @@ module internal MsgPackParser =
   let private extN<'T when 'T : comparison> head length (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
     matchHead head
     >>. length
-    >>= fun length -> binParser.byte1 >>= fun t -> binParser.byteN length |>> fun xs -> f t xs
+    >>= fun length -> binParser.byte1 >>= fun t -> binParser.byteN length |>> f t
     |>> Extended
 
   let ext8<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) =
@@ -262,7 +262,7 @@ module internal MsgPackParser =
 
   let parseExt<'T when 'T : comparison> (f: TypeCode -> byte [] -> ExtendedValue<'T>) input = parser f input
 
-  let parse input = parseExt (fun t xs -> Raw (t, xs)) input
+  let parse input = parseExt (fun t xs -> Raw(t, xs)) input
 
   module OldSpec =
 
@@ -292,4 +292,4 @@ module internal MsgPackParser =
         simpleFixType
       ]
 
-    let parse input = parser (fun t xs -> Raw (t, xs)) input
+    let parse input = parser (fun t xs -> Raw(t, xs)) input
