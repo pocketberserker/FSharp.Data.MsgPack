@@ -54,6 +54,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="app.config" />
+    <Compile Include="FsCheck.NUnit.fs" />
     <Compile Include="MsgPackTest.fs" />
   </ItemGroup>
   <ItemGroup>
