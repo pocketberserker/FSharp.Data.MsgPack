@@ -21,6 +21,8 @@ module MsgPack =
 
     let pack (value: #IPackable) = value.Pack()
 
+    let getTypeCode (value: #IPackable) = value.Code
+
   module OldSpec =
   
     let unpack binary : MsgPackValue option = unpackF MsgPackParser.OldSpec.parse binary

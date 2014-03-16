@@ -142,7 +142,7 @@ module MsgPackTest =
           [|
             yield HeadByte.Extended32
             yield! System.BitConverter.GetBytes(name.Length + age.Length + 1)
-            yield (x :> IPackable).Code
+            yield MsgPack.Helper.getTypeCode x
             yield 0x92uy
             yield! name
             yield! age
