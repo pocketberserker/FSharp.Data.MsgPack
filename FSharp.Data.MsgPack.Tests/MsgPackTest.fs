@@ -128,3 +128,36 @@ module MsgPackTest =
         |> Microsoft.FSharp.Collections.Map.ofList
         |> Map
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
+
+  type Person = {
+    Name : string
+    Age : int
+  }
+    with
+      interface IPackable with
+        member x.Code = 0x0cuy
+        member x.Pack() =
+          let name = x.Name |> String |> MsgPack.pack
+          let age = x.Age |> Int32 |> MsgPack.pack
+          [|
+            yield HeadByte.Extended32
+            yield! System.BitConverter.GetBytes(name.Length + age.Length + 1)
+            yield (x :> IPackable).Code
+            yield 0x92uy
+            yield! name
+            yield! age
+          |]
+
+  let parse' code body =
+    match code with
+    | 0x0cuy ->
+      match MsgPack.unpack body with
+      | Some (Array [| String name; Int32 age |]) -> Parsed { Name = name; Age = age }
+      | _ -> Raw(code, body)
+    | _ -> Raw(code, body)
+
+  [<Test>]
+  let ``ext`` () =
+    check <| fun name age ->
+      let person = Extended (Parsed { Name = name; Age = age })
+      Some person = (person |> MsgPack.packExt |> MsgPack.unpackExt parse')
