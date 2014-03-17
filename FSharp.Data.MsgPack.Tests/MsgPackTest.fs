@@ -1,9 +1,10 @@
-﻿namespace FSharp.Data
+﻿namespace FSharp.Data.MsgPack.Tests
 
 open NUnit.Framework
 open FsUnit
 open FsCheck
 open FsCheck.NUnit
+open FSharp.Data
 open MsgPackValue
 
 [<TestFixture>]
