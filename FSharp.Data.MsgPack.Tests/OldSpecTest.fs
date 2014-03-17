@@ -1,4 +1,4 @@
-﻿namespace FSharp.Data.MsgPack
+﻿namespace FSharp.Data.MsgPack.Tests
 
 open NUnit.Framework
 open FsUnit
