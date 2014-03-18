@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">RELEASE</Configuration>
+    </PropertyGroup>
     <ItemGroup>
         <PackageDir Include="$(MSBuildThisFileDirectory)..\..\packages"/>
         <Contents Include="$(MSBuildThisFileDirectory)..\files\**\*.*"/>
@@ -14,7 +17,7 @@
     </Target>
     <Target Name="BuildDocs"
             DependsOnTargets="RestorePackages;CopyFiles">
-        <Exec Command="fsi.exe --exec &quot;$(MSBuildThisFileDirectory)generate.fsx&quot;"/>
+        <Exec Command="fsi.exe --define:$(Configuration) --exec &quot;$(MSBuildThisFileDirectory)generate.fsx&quot;"/>
     </Target>
     <Target Name="Build">
         <CallTarget Targets="BuildDocs"/>
