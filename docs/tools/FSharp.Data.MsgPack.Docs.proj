@@ -6,6 +6,7 @@
     <ItemGroup>
         <PackageDir Include="$(MSBuildThisFileDirectory)..\..\packages"/>
         <Contents Include="$(MSBuildThisFileDirectory)..\files\**\*.*"/>
+        <Styles Include="$(MsBuildThisFileDirectory)..\..\packages\FSharp.Formatting.2.4.1\styles\**\*.*"/>
     </ItemGroup>
 
     <Target Name="RestorePackages">
@@ -14,6 +15,8 @@
     <Target Name="CopyFiles">
         <Copy SourceFiles="@(Contents)"
               DestinationFiles="@(Contents->'$(MSBuildThisFileDirectory)..\output\%(RecursiveDir)%(Filename)%(Extension)')"/>
+        <Copy SourceFiles="@(Styles)"
+              DestinationFiles="@(Styles->'$(MSBuildThisFileDirectory)..\output\content\%(RecursiveDir)%(Filename)%(Extension)')"/>
     </Target>
     <Target Name="BuildDocs"
             DependsOnTargets="RestorePackages;CopyFiles">
