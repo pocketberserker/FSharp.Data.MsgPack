@@ -35,21 +35,21 @@ module internal MsgPackFormatter =
 
   let rec format = function
     | Nil -> [| HeadByte.Nil |]
-    | Boolean false -> [| HeadByte.False |]
-    | Boolean true -> [| HeadByte.True |]
-    | UInt8 value when value <= 0x7fuy -> [| value |]
-    | UInt8 value -> [| HeadByte.UInt8; value |]
-    | UInt16 value -> [| yield HeadByte.UInt16; yield! uint16ToBytes value |]
-    | UInt32 value -> [| yield HeadByte.UInt32; yield! uint32ToBytes value |]
-    | UInt64 value -> [| yield HeadByte.UInt64; yield! uint64ToBytes value |]
-    | Int8 value when value < 0y && value > -32y -> [| byte value |]
-    | Int8 value -> [| HeadByte.Int8; byte value |]
-    | Int16 value -> [| yield HeadByte.Int16; yield! int16ToBytes value |]
-    | Int32 value -> [| yield HeadByte.Int32; yield! intToBytes value |]
-    | Int64 value -> [| yield HeadByte.Int64; yield! int64ToBytes value |]
-    | Float32 value -> [| yield HeadByte.Float32; yield! float32ToBytes value |]
-    | Float64 value -> [| yield HeadByte.Float64; yield! floatToBytes value |]
-    | String value ->
+    | MBool false -> [| HeadByte.False |]
+    | MBool true -> [| HeadByte.True |]
+    | MUInt8 value when value <= 0x7fuy -> [| value |]
+    | MUInt8 value -> [| HeadByte.UInt8; value |]
+    | MUInt16 value -> [| yield HeadByte.UInt16; yield! uint16ToBytes value |]
+    | MUInt32 value -> [| yield HeadByte.UInt32; yield! uint32ToBytes value |]
+    | MUInt64 value -> [| yield HeadByte.UInt64; yield! uint64ToBytes value |]
+    | MInt8 value when value < 0y && value > -32y -> [| byte value |]
+    | MInt8 value -> [| HeadByte.Int8; byte value |]
+    | MInt16 value -> [| yield HeadByte.Int16; yield! int16ToBytes value |]
+    | MInt32 value -> [| yield HeadByte.Int32; yield! intToBytes value |]
+    | MInt64 value -> [| yield HeadByte.Int64; yield! int64ToBytes value |]
+    | MFloat32 value -> [| yield HeadByte.Float32; yield! float32ToBytes value |]
+    | MFloat64 value -> [| yield HeadByte.Float64; yield! floatToBytes value |]
+    | MString value ->
       let length = String.length value
       let value = stringToBytes value
       if length <= 31 then [| yield 0xa0uy + byte length; yield! value |]
@@ -65,14 +65,14 @@ module internal MsgPackFormatter =
       elif length <= int System.UInt16.MaxValue then
         [| yield HeadByte.Binary16; yield! length |> uint16 |> uint16ToBytes; yield! value |]
       else [| yield HeadByte.Binary32; yield! length |> uint32 |> uint32ToBytes; yield! value |]
-    | Array value ->
+    | MArray value ->
       let length = Array.length value
       let values = Array.collect format value
       if length <= 15 then [| yield 0x90uy + byte length; yield! values |]
       elif length <= int System.UInt16.MaxValue then
         [| yield HeadByte.Array16; yield! length |> uint16 |> uint16ToBytes; yield! values |]
       else [| yield HeadByte.Array32; yield! length |> uint32 |> uint32ToBytes; yield! values |]
-    | Map values ->
+    | MMap values ->
       let length = values |> Map.toSeq |> Seq.length
       let values =
         values
@@ -93,6 +93,6 @@ module internal MsgPackFormatter =
 
     let format (value: MsgPackValue) =
       match value with
-      | String value -> formatRaw (String.length value) (stringToBytes value)
+      | MString value -> formatRaw (String.length value) (stringToBytes value)
       | Binary value -> formatRaw (Array.length value) value
       | _ -> format value

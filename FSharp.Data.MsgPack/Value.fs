@@ -7,22 +7,22 @@ type ExtendedValue<'T when 'T : comparison> =
   | Parsed of 'T
 
 type MsgPackValue<'T when 'T : comparison> =
-  | UInt8 of uint8
-  | UInt16 of uint16
-  | UInt32 of uint32
-  | UInt64 of uint64
-  | Int8 of int8
-  | Int16 of int16
-  | Int32 of int
-  | Int64 of int64
+  | MUInt8 of uint8
+  | MUInt16 of uint16
+  | MUInt32 of uint32
+  | MUInt64 of uint64
+  | MInt8 of int8
+  | MInt16 of int16
+  | MInt32 of int
+  | MInt64 of int64
   | Nil
-  | Boolean of bool
-  | Float32 of float32
-  | Float64 of float
-  | String of string
+  | MBool of bool
+  | MFloat32 of float32
+  | MFloat64 of float
+  | MString of string
   | Binary of byte []
-  | Array of MsgPackValue<'T> []
-  | Map of Map<MsgPackValue<'T>, MsgPackValue<'T>>
+  | MArray of MsgPackValue<'T> []
+  | MMap of Map<MsgPackValue<'T>, MsgPackValue<'T>>
   | Extended of ExtendedValue<'T>
 
 type IPackable =
@@ -43,22 +43,22 @@ module MsgPackValue =
   module Limited =
     
     let Nil: MsgPackValue = Nil
-    let True: MsgPackValue = Boolean true
-    let False: MsgPackValue = Boolean false
-    let UInt8 value : MsgPackValue = UInt8 value
-    let UInt16 value : MsgPackValue = UInt16 value
-    let UInt32 value : MsgPackValue = UInt32 value
-    let UInt64 value : MsgPackValue = UInt64 value
-    let Int8 value : MsgPackValue = Int8 value
-    let Int16 value : MsgPackValue = Int16 value
-    let Int32 value : MsgPackValue = Int32 value
-    let Int64 value : MsgPackValue = Int64 value
-    let Float32 value : MsgPackValue = Float32 value
-    let Float64 value : MsgPackValue = Float64 value
-    let String value : MsgPackValue = String value
+    let True: MsgPackValue = MBool true
+    let False: MsgPackValue = MBool false
+    let UInt8 value : MsgPackValue = MUInt8 value
+    let UInt16 value : MsgPackValue = MUInt16 value
+    let UInt32 value : MsgPackValue = MUInt32 value
+    let UInt64 value : MsgPackValue = MUInt64 value
+    let Int8 value : MsgPackValue = MInt8 value
+    let Int16 value : MsgPackValue = MInt16 value
+    let Int32 value : MsgPackValue = MInt32 value
+    let Int64 value : MsgPackValue = MInt64 value
+    let Float32 value : MsgPackValue = MFloat32 value
+    let Float64 value : MsgPackValue = MFloat64 value
+    let String value : MsgPackValue = MString value
     let Binary value : MsgPackValue = Binary value
-    let Array values : MsgPackValue = Array values
-    let Map map : MsgPackValue = Map map
+    let Array values : MsgPackValue = MArray values
+    let Map map : MsgPackValue = MMap map
 
   module HeadByte =
 

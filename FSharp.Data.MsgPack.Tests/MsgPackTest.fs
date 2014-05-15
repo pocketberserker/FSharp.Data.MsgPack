@@ -86,8 +86,8 @@ module MsgPackTest =
     check <| fun x ->
       let value = Float32 x
       match value |> MsgPack.pack |> MsgPack.unpack with
-      | Some (Float32 actual) when System.Single.IsNaN(actual) -> true
-      | Some (Float32 actual) -> actual = x
+      | Some (MFloat32 actual) when System.Single.IsNaN(actual) -> true
+      | Some (MFloat32 actual) -> actual = x
       | _ -> false
 
   [<Test>]
@@ -95,8 +95,8 @@ module MsgPackTest =
     check <| fun x ->
       let value = Float64 x
       match value |> MsgPack.pack |> MsgPack.unpack with
-      | Some (Float64 actual) when System.Double.IsNaN(actual) -> true
-      | Some (Float64 actual) -> actual = x
+      | Some (MFloat64 actual) when System.Double.IsNaN(actual) -> true
+      | Some (MFloat64 actual) -> actual = x
       | _ -> false
 
   [<Test>]
@@ -153,7 +153,7 @@ module MsgPackTest =
     match code with
     | 0x0cuy ->
       match MsgPack.unpack body with
-      | Some (Array [| String name; Int32 age |]) -> Parsed { Name = name; Age = age }
+      | Some (MArray [| MString name; MInt32 age |]) -> Parsed { Name = name; Age = age }
       | _ -> Raw(code, body)
     | _ -> Raw(code, body)
 

@@ -18,40 +18,40 @@ module internal MsgPackParser =
 
   let false'<'T when 'T : comparison> =
     matchHead HeadByte.False
-    |>>% (Boolean false: MsgPackValue<'T>)
+    |>>% (MBool false: MsgPackValue<'T>)
   let true'<'T when 'T : comparison> =
     matchHead HeadByte.True
-    |>>% (Boolean true: MsgPackValue<'T>)
+    |>>% (MBool true: MsgPackValue<'T>)
   let bool'<'T when 'T : comparison> = false'<'T> <|> true'<'T>
 
   let positiveFixInt<'T when 'T : comparison> =
     satisfy (function | One -> false | Zero -> true) binParser.bit1
     >>. binParser.bitsN 7
     |>> binParser.bitsToInt
-    |>> (byte >> (UInt8: byte -> MsgPackValue<'T>))
+    |>> (byte >> (MUInt8: byte -> MsgPackValue<'T>))
 
   let negativeFixInt<'T when 'T : comparison> =
     satisfy (function | [| One; One; One |] -> true | _ -> false) (binParser.bitsN 3)
     >>. binParser.bitsN 5
     |>> binParser.bitsToInt
-    |>> (fun x -> Int8 (int8 x - 0b100000y) : MsgPackValue<'T>)
+    |>> (fun x -> MInt8 (int8 x - 0b100000y) : MsgPackValue<'T>)
 
   let uint8'<'T when 'T : comparison> =
     matchHead HeadByte.UInt8
     >>. binParser.byte1
-    |>> (UInt8: byte -> MsgPackValue<'T>)
+    |>> (MUInt8: byte -> MsgPackValue<'T>)
   let uint16'<'T when 'T : comparison> =
     matchHead HeadByte.UInt16
     >>. binParser.uint16
-    |>> (UInt16: uint16 -> MsgPackValue<'T>)
+    |>> (MUInt16: uint16 -> MsgPackValue<'T>)
   let uint32'<'T when 'T : comparison> =
     matchHead HeadByte.UInt32
     >>. binParser.uint32
-    |>> (UInt32: uint32 -> MsgPackValue<'T>)
+    |>> (MUInt32: uint32 -> MsgPackValue<'T>)
   let uint64'<'T when 'T : comparison> =
     matchHead HeadByte.UInt64
     >>. binParser.uint64
-    |>> (UInt64: uint64 -> MsgPackValue<'T>)
+    |>> (MUInt64: uint64 -> MsgPackValue<'T>)
   let uint'<'T when 'T : comparison> =
     choice [
       uint8'<'T>
@@ -63,19 +63,19 @@ module internal MsgPackParser =
   let int8'<'T when 'T : comparison> =
     matchHead HeadByte.Int8
     >>. binParser.byte1
-    |>> (int8 >> (Int8: int8 -> MsgPackValue<'T>))
+    |>> (int8 >> (MInt8: int8 -> MsgPackValue<'T>))
   let int16'<'T when 'T : comparison> =
     matchHead HeadByte.Int16
     >>. binParser.int16
-    |>> (Int16: int16 -> MsgPackValue<'T>)
+    |>> (MInt16: int16 -> MsgPackValue<'T>)
   let int32'<'T when 'T : comparison> =
     matchHead HeadByte.Int32
     >>. binParser.int32
-    |>> (Int32: int -> MsgPackValue<'T>)
+    |>> (MInt32: int -> MsgPackValue<'T>)
   let int64'<'T when 'T : comparison> =
     matchHead HeadByte.Int64
     >>. binParser.int64
-    |>> (Int64: int64 -> MsgPackValue<'T>)
+    |>> (MInt64: int64 -> MsgPackValue<'T>)
   let int'<'T when 'T : comparison> =
     choice [
       int8'<'T>
@@ -87,11 +87,11 @@ module internal MsgPackParser =
   let float32'<'T when 'T : comparison> =
     matchHead HeadByte.Float32
     >>. binParser.floatP
-    |>> (Float32: float32 -> MsgPackValue<'T>)
+    |>> (MFloat32: float32 -> MsgPackValue<'T>)
   let float64'<'T when 'T : comparison> =
     matchHead HeadByte.Float64
     >>. binParser.byteN 8
-    |>> (fun xs -> Float64 (System.BitConverter.ToDouble(xs, 0)): MsgPackValue<'T>)
+    |>> (fun xs -> MFloat64 (System.BitConverter.ToDouble(xs, 0)): MsgPackValue<'T>)
   let float'<'T when 'T : comparison> = float32'<'T> <|> float64'<'T>
 
   let private stringN<'T when 'T : comparison> matchHead length =
@@ -99,7 +99,7 @@ module internal MsgPackParser =
     >>. length
     >>= fun length -> binParser.byteN length
     |>> fun raw -> Encoding.UTF8.GetString(raw)
-    |>> (String: string -> MsgPackValue<'T>)
+    |>> (MString: string -> MsgPackValue<'T>)
   
   let fixRaw<'T,'U when 'T : comparison> convert (value: 'U -> MsgPackValue<'T>) =
     binParser.byte1
@@ -112,7 +112,7 @@ module internal MsgPackParser =
     |>> value
 
   let fixString<'T when 'T : comparison> =
-    fixRaw<'T, string> (fun xs -> Encoding.UTF8.GetString(xs)) String
+    fixRaw<'T, string> (fun xs -> Encoding.UTF8.GetString(xs)) MString
 
   let string8<'T when 'T : comparison> =
     stringN<'T> (matchHead HeadByte.String8) (binParser.byte1 |>> binParser.byteToInt)
@@ -198,19 +198,19 @@ module internal MsgPackParser =
     >>= fun size ->
       if size > 0 then manyN size (parser f)
       else preturn []
-    |>> (Array.ofList >> Array)
+    |>> (Array.ofList >> MArray)
 
   and array16 f =
     matchHead HeadByte.Array16
     >>. binParser.byte2
     |>> (binParser.toUInt16 >> int)
-    >>= fun size -> manyN size (parser f) |>> (Array.ofList >> Array)
+    >>= fun size -> manyN size (parser f) |>> (Array.ofList >> MArray)
 
   and array32 f =
     matchHead HeadByte.Array32
     >>. binParser.byte4
     |>> (binParser.toUInt32 >> int)
-    >>= fun size -> manyN size (parser f) |>> (Array.ofList >> Array)
+    >>= fun size -> manyN size (parser f) |>> (Array.ofList >> MArray)
 
   and array' f =
     choice [
@@ -230,19 +230,19 @@ module internal MsgPackParser =
     >>= fun size ->
       if size > 0 then manyN size (keyValuePair f)
       else preturn []
-    |>> (Map.ofList >> Map)
+    |>> (Map.ofList >> MMap)
 
   and map16 f =
     matchHead HeadByte.Map16
     >>. binParser.byte2
     |>> (binParser.toUInt16 >> int)
-    >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> Map)
+    >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> MMap)
 
   and map32 f =
     matchHead HeadByte.Map32
     >>. binParser.byte4
     |>> (binParser.toUInt32 >> int)
-    >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> Map)
+    >>= fun size -> manyN size (keyValuePair f) |>> (Map.ofList >> MMap)
 
   and map' f =
     choice [
