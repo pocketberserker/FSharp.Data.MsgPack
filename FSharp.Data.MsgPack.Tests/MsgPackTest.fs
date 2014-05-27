@@ -36,55 +36,55 @@ module MsgPackTest =
   [<Test>]
   let ``uint8`` () =
     check <| fun x ->
-      let value = UInt8 x
+      let value = MUInt8 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``uint16`` () =
     check <| fun x ->
-      let value = UInt16 x
+      let value = MUInt16 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``uint32`` () =
     check <| fun x ->
-      let value = UInt32 x
+      let value = MUInt32 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``uint64`` () =
     check <| fun x ->
-      let value = UInt64 x
+      let value = MUInt64 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``int8`` () =
     check <| fun x ->
-      let value = Int8 x
+      let value = MInt8 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``int16`` () =
     check <| fun x ->
-      let value = Int16 x
+      let value = MInt16 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``int32`` () =
     check <| fun x ->
-      let value = Int32 x
+      let value = MInt32 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``int64`` () =
     check <| fun x ->
-      let value = Int64 x
+      let value = MInt64 x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``float32`` () =
     check <| fun x ->
-      let value = Float32 x
+      let value = MFloat32 x
       match value |> MsgPack.pack |> MsgPack.unpack with
       | Some (MFloat32 actual) when System.Single.IsNaN(actual) -> true
       | Some (MFloat32 actual) -> actual = x
@@ -93,7 +93,7 @@ module MsgPackTest =
   [<Test>]
   let ``float64`` () =
     check <| fun x ->
-      let value = Float64 x
+      let value = MFloat64 x
       match value |> MsgPack.pack |> MsgPack.unpack with
       | Some (MFloat64 actual) when System.Double.IsNaN(actual) -> true
       | Some (MFloat64 actual) -> actual = x
@@ -102,7 +102,7 @@ module MsgPackTest =
   [<Test>]
   let ``string`` () =
     check <| fun x ->
-      let value = String x
+      let value = MString x
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
@@ -116,8 +116,8 @@ module MsgPackTest =
     check <| fun xs ->
       let value =
         xs
-        |> Microsoft.FSharp.Collections.Array.map String
-        |> Array
+        |> Array.map MString
+        |> MArray
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
@@ -125,9 +125,9 @@ module MsgPackTest =
     check <| fun (xs: (string * string) list) ->
       let value =
         xs
-        |> Microsoft.FSharp.Collections.List.map (fun (k,v) -> (String k, String v))
-        |> Microsoft.FSharp.Collections.Map.ofList
-        |> Map
+        |> List.map (fun (k,v) -> (MString k, MString v))
+        |> Map.ofList
+        |> MMap
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   type Person = {
@@ -138,8 +138,8 @@ module MsgPackTest =
       interface IPackable with
         member x.Code = 0x0cuy
         member x.Pack() =
-          let name = x.Name |> String |> MsgPack.pack
-          let age = x.Age |> Int32 |> MsgPack.pack
+          let name = x.Name |> MString |> MsgPack.pack
+          let age = x.Age |> MInt32 |> MsgPack.pack
           [|
             yield HeadByte.Extended32
             yield! System.BitConverter.GetBytes(name.Length + age.Length + 1)
