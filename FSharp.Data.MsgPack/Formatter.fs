@@ -73,7 +73,7 @@ module internal MsgPackFormatter =
         [| yield HeadByte.Array16; yield! length |> uint16 |> uint16ToBytes; yield! values |]
       else [| yield HeadByte.Array32; yield! length |> uint32 |> uint32ToBytes; yield! values |]
     | MMap values ->
-      let length = values |> Map.toSeq |> Seq.length
+      let length = values.Count
       let values =
         values
         |> Map.fold (fun acc k v -> Array.append acc [| yield! format k; yield! format v |]) [||]
