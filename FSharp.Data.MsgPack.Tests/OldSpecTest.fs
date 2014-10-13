@@ -13,9 +13,10 @@ module OldSpecTest =
   [<Test>]
   let ``string`` () =
     check <| fun x ->
-      let value = MString x
-      let raw = Binary (System.Text.Encoding.UTF8.GetBytes(x))
-      Some raw = (value |> MsgPack.OldSpec.pack |> MsgPack.OldSpec.unpack)
+      (not <| System.String.IsNullOrEmpty(x)) ==> lazy (
+        let value = MString x
+        let raw = Binary (System.Text.Encoding.UTF8.GetBytes(x))
+        Some raw = (value |> MsgPack.OldSpec.pack |> MsgPack.OldSpec.unpack))
 
   [<Test>]
   let ``binary`` () =

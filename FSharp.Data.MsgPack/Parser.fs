@@ -103,7 +103,7 @@ module internal MsgPackParser =
   
   let fixRaw<'T,'U when 'T : comparison> convert (value: 'U -> MsgPackValue<'T>) =
     binParser.byte1
-    |> satisfy (byteToBitArray >> function
+    |> satisfy (byteToBitArray >> Array.toList >> function
     | [ One; Zero; One; _; _; _; _; _ ] -> true
     | _ -> false)
     |>> (byteToBitArray >> Seq.skip 3 >> Seq.toArray >> binParser.bitsToInt)
@@ -191,7 +191,7 @@ module internal MsgPackParser =
 
   let rec fixArray f =
     binParser.byte1
-    |> satisfy (byteToBitArray >> (function
+    |> satisfy (byteToBitArray >> Array.toList >> (function
     | [ One; Zero; Zero; One; _; _; _; _ ] -> true
     | _ -> false))
     |>> (byteToBitArray >> Seq.skip 4 >> Seq.toArray >> binParser.bitsToInt)
@@ -223,7 +223,7 @@ module internal MsgPackParser =
 
   and fixMap f =
     binParser.byte1
-    |> satisfy (byteToBitArray >> (function
+    |> satisfy (byteToBitArray >> Array.toList >> (function
     | [ One; Zero; Zero; Zero; _; _; _; _ ] -> true
     | _ -> false))
     |>> (byteToBitArray >> Seq.skip 4 >> Seq.toArray >> binParser.bitsToInt)

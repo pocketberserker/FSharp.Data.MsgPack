@@ -102,8 +102,9 @@ module MsgPackTest =
   [<Test>]
   let ``string`` () =
     check <| fun x ->
-      let value = MString x
-      Some value = (value |> MsgPack.pack |> MsgPack.unpack)
+      (not <| System.String.IsNullOrEmpty(x)) ==> lazy
+        (let value = MString x
+        Some value = (value |> MsgPack.pack |> MsgPack.unpack))
 
   [<Test>]
   let ``binary`` () =
@@ -116,16 +117,16 @@ module MsgPackTest =
     check <| fun xs ->
       let value =
         xs
-        |> Array.map MString
+        |> Array.map MInt32
         |> MArray
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
 
   [<Test>]
   let ``map`` () =
-    check <| fun (xs: (string * string) list) ->
+    check <| fun (xs: (int * int) list) ->
       let value =
         xs
-        |> List.map (fun (k,v) -> (MString k, MString v))
+        |> List.map (fun (k,v) -> (MInt32 k, MInt32 v))
         |> Map.ofList
         |> MMap
       Some value = (value |> MsgPack.pack |> MsgPack.unpack)
@@ -160,5 +161,6 @@ module MsgPackTest =
   [<Test>]
   let ``ext`` () =
     check <| fun name age ->
-      let person = Extended (Parsed { Name = name; Age = age })
-      Some person = (person |> MsgPack.packExt |> MsgPack.unpackExt parse')
+      (not <| System.String.IsNullOrEmpty(name)) ==> lazy
+        (let person = Extended (Parsed { Name = name; Age = age })
+        Some person = (person |> MsgPack.packExt |> MsgPack.unpackExt parse'))
